@@ -1,7 +1,13 @@
-require("dotenv").config();
-const express = require("express");
-const path = require("path");
-const { Resend } = require("resend");
+import dotenv from "dotenv";
+import express from "express";
+import path from "path";
+import { Resend } from "resend";
+import { fileURLToPath } from "url";
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -16,18 +22,22 @@ app.get("/", (req, res) => {
 app.post("/guardar-respuesta", async (req, res) => {
   const opcion = req.body.opcion;
 
+  if (!opcion) {
+    return res.status(400).json({ ok: false, error: "No se recibió ninguna opción" });
+  }
+
   try {
     await resend.emails.send({
       from: "Formulario <onboarding@resend.dev>",
       to: process.env.EMAIL_TO,
       subject: "Respuesta del formulario 💘",
-      text: `La persona eligió: ${opcion}`,
+      html: `<h2>Alguien eligió:</h2><p style="font-size:22px">${opcion}</p>`
     });
 
-    res.send("Correo enviado correctamente");
+    res.json({ ok: true, mensaje: "Correo enviado correctamente" });
   } catch (error) {
     console.error("Error al enviar correo:", error);
-    res.send("Error al enviar correo");
+    res.status(500).json({ ok: false, error: "Error al enviar correo" });
   }
 });
 
